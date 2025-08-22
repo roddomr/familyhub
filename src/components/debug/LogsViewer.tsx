@@ -7,7 +7,7 @@ import { useLogger } from '@/hooks/useLogger';
 import { RefreshCw, AlertCircle, Info, AlertTriangle, Bug } from 'lucide-react';
 
 const LogsViewer = () => {
-  const { getUserLogs, getRecentErrors } = useLogger();
+  const { getUserLogs, getRecentErrors, logInfo, logError } = useLogger();
   const [logs, setLogs] = useState<any[]>([]);
   const [errors, setErrors] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,14 +64,30 @@ const LogsViewer = () => {
     }
   };
 
+  const testLogging = async () => {
+    console.log('🧪 Testing logging system...');
+    try {
+      await logInfo('Test log message', { test: true }, 'debug', 'test_logging');
+      await logError('Test error message', { test: true }, 'debug', 'test_logging', 'TEST_ERROR');
+      setTimeout(() => loadLogs(), 1000); // Reload logs after 1 second
+    } catch (error) {
+      console.error('Failed to test logging:', error);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Debug Logs</h2>
-        <Button onClick={loadLogs} disabled={loading} size="sm">
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={testLogging} variant="outline" size="sm">
+            Test Logging
+          </Button>
+          <Button onClick={loadLogs} disabled={loading} size="sm">
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
