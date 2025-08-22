@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLogger } from '@/hooks/useLogger';
+import { supabase } from '@/lib/supabase';
 import { RefreshCw, AlertCircle, Info, AlertTriangle, Bug } from 'lucide-react';
 
 const LogsViewer = () => {
@@ -15,12 +16,31 @@ const LogsViewer = () => {
   const loadLogs = async () => {
     setLoading(true);
     try {
-      const [userLogs, recentErrors] = await Promise.all([
-        getUserLogs(20),
-        getRecentErrors()
-      ]);
-      setLogs(userLogs);
-      setErrors(recentErrors);
+      // Temporarily fetch all recent logs directly for debugging
+      const { data: allLogs, error: logsError } = await supabase
+        .from('logs')
+        .select('*')
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      const { data: allErrors, error: errorsError } = await supabase
+        .from('logs')
+        .select('*')
+        .in('level', ['error', 'fatal'])
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (logsError) {
+        console.error('Failed to load logs:', logsError);
+      }
+      if (errorsError) {
+        console.error('Failed to load errors:', errorsError);
+      }
+
+      setLogs(allLogs || []);
+      setErrors(allErrors || []);
     } catch (error) {
       console.error('Failed to load logs:', error);
     } finally {
@@ -128,7 +148,10 @@ const LogsViewer = () => {
                       )}
                       {error.details && (
                         <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                          {JSON.stringify(error.details, null, 2)}
+                          {typeof error.details === 'string' 
+                            ? error.details 
+                            : JSON.stringify(error.details, null, 2)
+                          }
                         </pre>
                       )}
                     </div>
@@ -176,7 +199,10 @@ const LogsViewer = () => {
                       )}
                       {log.details && (
                         <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
-                          {JSON.stringify(log.details, null, 2)}
+                          {typeof log.details === 'string' 
+                            ? log.details 
+                            : JSON.stringify(log.details, null, 2)
+                          }
                         </pre>
                       )}
                     </div>
