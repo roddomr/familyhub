@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateFamilyDialog from '@/components/family/CreateFamilyDialog';
-import LogsViewer from '@/components/debug/LogsViewer';
 import { 
   Plus, 
   TrendingUp, 
@@ -84,21 +83,18 @@ const Finances = () => {
   if (!currentFamily) {
     return (
       <DashboardLayout>
-        <div className="space-y-8">
-          <div className="min-h-64 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <h2 className="text-2xl font-bold">Welcome to Family Hub!</h2>
-              <p className="text-muted-foreground">Create or join a family to start tracking finances.</p>
-              <Button onClick={() => setShowCreateFamily(true)}>
-                Create Your First Family
-              </Button>
-            </div>
-            <CreateFamilyDialog 
-              open={showCreateFamily} 
-              onOpenChange={setShowCreateFamily}
-            />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">Welcome to Family Hub!</h2>
+            <p className="text-muted-foreground">Create or join a family to start tracking finances.</p>
+            <Button onClick={() => setShowCreateFamily(true)}>
+              Create Your First Family
+            </Button>
           </div>
-          <LogsViewer />
+          <CreateFamilyDialog 
+            open={showCreateFamily} 
+            onOpenChange={setShowCreateFamily}
+          />
         </div>
       </DashboardLayout>
     );

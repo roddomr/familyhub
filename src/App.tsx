@@ -10,6 +10,7 @@ import Habits from "./pages/Habits";
 import Finances from "./pages/Finances";
 import Chores from "./pages/Chores";
 import Todos from "./pages/Todos";
+import Settings from "./pages/Settings";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -53,12 +54,7 @@ const App = () => (
           } />
           <Route path="/settings" element={
             <ProtectedRoute>
-              <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center">
-                  <h1 className="text-2xl font-bold mb-4">Settings</h1>
-                  <p className="text-muted-foreground">Coming soon...</p>
-                </div>
-              </div>
+              <Settings />
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
