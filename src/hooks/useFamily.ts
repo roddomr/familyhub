@@ -81,7 +81,12 @@ export const useFamily = () => {
     }
 
     try {
-      await logInfo('Attempting to create family', { name, description }, 'families', 'create_family')
+      await logInfo('Attempting to create family', { 
+        name, 
+        description, 
+        user_id: user.id,
+        user_email: user.email 
+      }, 'families', 'create_family')
 
       // Use the enhanced database function with logging
       const { data: result, error: rpcError } = await supabase.rpc('create_family_with_logging', {
