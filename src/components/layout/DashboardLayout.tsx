@@ -21,6 +21,8 @@ import {
   Bell
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -29,6 +31,7 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, signOut } = useAuth();
 
   const navItems = [
     { icon: Home, label: 'Dashboard', path: '/dashboard' },
@@ -38,12 +41,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Calendar, label: 'Chores', path: '/chores' },
   ];
 
-  const handleLogout = () => {
-    localStorage.removeItem('familyhub_user');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Failed to log out');
+    }
   };
-
-  const user = JSON.parse(localStorage.getItem('familyhub_user') || '{}');
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +95,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
                     <AvatarFallback className="bg-gradient-primary text-white">
-                      {user.name?.charAt(0) || 'U'}
+                      {user?.user_metadata?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -97,9 +103,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name || 'Demo User'}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user?.user_metadata?.name || 'User'}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {user.email || 'demo@family.com'}
+                      {user?.email || 'user@family.com'}
                     </p>
                   </div>
                 </DropdownMenuLabel>
