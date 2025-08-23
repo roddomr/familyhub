@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLogger } from '@/hooks/useLogger';
-import { supabase } from '@/lib/supabase';
 import { RefreshCw, AlertCircle, Info, AlertTriangle, Bug } from 'lucide-react';
 
 const LogsViewer = () => {
@@ -16,31 +15,12 @@ const LogsViewer = () => {
   const loadLogs = async () => {
     setLoading(true);
     try {
-      // Temporarily fetch all recent logs directly for debugging
-      const { data: allLogs, error: logsError } = await supabase
-        .from('logs')
-        .select('*')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      const { data: allErrors, error: errorsError } = await supabase
-        .from('logs')
-        .select('*')
-        .in('level', ['error', 'fatal'])
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      if (logsError) {
-        console.error('Failed to load logs:', logsError);
-      }
-      if (errorsError) {
-        console.error('Failed to load errors:', errorsError);
-      }
-
-      setLogs(allLogs || []);
-      setErrors(allErrors || []);
+      const [userLogs, recentErrors] = await Promise.all([
+        getUserLogs(50),
+        getRecentErrors()
+      ]);
+      setLogs(userLogs);
+      setErrors(recentErrors);
     } catch (error) {
       console.error('Failed to load logs:', error);
     } finally {

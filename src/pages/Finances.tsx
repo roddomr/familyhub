@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import CreateFamilyDialog from '@/components/family/CreateFamilyDialog';
+import AddTransactionDialog from '@/components/finance/AddTransactionDialog';
+import AddAccountDialog from '@/components/finance/AddAccountDialog';
 import { 
   Plus, 
   TrendingUp, 
@@ -26,6 +28,8 @@ import { cn } from '@/lib/utils';
 const Finances = () => {
   const [showBalances, setShowBalances] = useState(true);
   const [showCreateFamily, setShowCreateFamily] = useState(false);
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  const [showAddAccount, setShowAddAccount] = useState(false);
   const { 
     accounts, 
     recentTransactions, 
@@ -120,7 +124,7 @@ const Finances = () => {
               {showBalances ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
               {showBalances ? 'Hide' : 'Show'} Balances
             </Button>
-            <Button>
+            <Button onClick={() => setShowAddTransaction(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add Transaction
             </Button>
@@ -196,7 +200,11 @@ const Finances = () => {
                   <CardTitle>Accounts</CardTitle>
                   <CardDescription>Your financial accounts overview</CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowAddAccount(true)}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Account
                 </Button>
@@ -359,11 +367,19 @@ const Finances = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Button variant="outline" className="h-auto p-4 flex-col space-y-2">
+              <Button 
+                variant="outline" 
+                className="h-auto p-4 flex-col space-y-2"
+                onClick={() => setShowAddTransaction(true)}
+              >
                 <Plus className="w-6 h-6 text-brand-primary" />
                 <span className="text-sm">Add Transaction</span>
               </Button>
-              <Button variant="outline" className="h-auto p-4 flex-col space-y-2">
+              <Button 
+                variant="outline" 
+                className="h-auto p-4 flex-col space-y-2"
+                onClick={() => setShowAddAccount(true)}
+              >
                 <CreditCard className="w-6 h-6 text-brand-secondary" />
                 <span className="text-sm">Add Account</span>
               </Button>
@@ -378,6 +394,26 @@ const Finances = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Add Transaction Dialog */}
+        <AddTransactionDialog
+          open={showAddTransaction}
+          onOpenChange={setShowAddTransaction}
+          onTransactionAdded={() => {
+            // Refresh financial data when transaction is added
+            window.location.reload(); // Simple refresh for now
+          }}
+        />
+
+        {/* Add Account Dialog */}
+        <AddAccountDialog
+          open={showAddAccount}
+          onOpenChange={setShowAddAccount}
+          onAccountAdded={() => {
+            // Refresh financial data when account is added
+            window.location.reload(); // Simple refresh for now
+          }}
+        />
       </div>
     </DashboardLayout>
   );
