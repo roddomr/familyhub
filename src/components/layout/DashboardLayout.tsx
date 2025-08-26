@@ -23,6 +23,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -32,22 +33,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { t } = useTranslation();
 
   const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/dashboard' },
-    { icon: Target, label: 'Habits', path: '/habits' },
-    { icon: DollarSign, label: 'Finances', path: '/finances' },
-    { icon: CheckSquare, label: 'To-Do', path: '/todos' },
-    { icon: Calendar, label: 'Chores', path: '/chores' },
+    { icon: Home, label: t('nav.dashboard'), path: '/dashboard' },
+    { icon: Target, label: t('nav.habits'), path: '/habits' },
+    { icon: DollarSign, label: t('nav.finances'), path: '/finances' },
+    { icon: CheckSquare, label: t('nav.todos'), path: '/todos' },
+    { icon: Calendar, label: t('nav.chores'), path: '/chores' },
   ];
 
   const handleLogout = async () => {
     try {
       await signOut();
-      toast.success('Logged out successfully');
+      toast.success(t('auth.signOut') + ' exitosamente');
       navigate('/login');
     } catch (error) {
-      toast.error('Failed to log out');
+      toast.error('Error al cerrar sesión');
     }
   };
 
@@ -114,12 +116,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t('nav.settings')}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('nav.logout')}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

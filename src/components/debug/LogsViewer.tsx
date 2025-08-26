@@ -98,13 +98,13 @@ const LogsViewer = () => {
             <CardDescription>System-wide errors in the last 24 hours</CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-96">
+            <div className="h-96 overflow-auto border rounded-md p-2">
               {errors.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No recent errors</p>
               ) : (
                 <div className="space-y-3">
                   {errors.map((error, index) => (
-                    <div key={index} className="border rounded-lg p-3 space-y-2">
+                    <div key={index} className="border rounded-lg p-3 space-y-2 overflow-x-auto">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {getLevelIcon(error.level)}
@@ -115,9 +115,10 @@ const LogsViewer = () => {
                             <Badge variant="outline">{error.module}</Badge>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(error.created_at).toLocaleString()}
-                        </span>
+                        <div className="text-xs text-foreground bg-gray-100 px-2 py-1 rounded border">
+                          📅 {new Date(error.created_at).toLocaleDateString()}<br/>
+                          ⏰ {new Date(error.created_at).toLocaleTimeString()}
+                        </div>
                       </div>
                       <p className="text-sm font-medium">{error.message}</p>
                       {error.action && (
@@ -138,7 +139,7 @@ const LogsViewer = () => {
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
 
@@ -149,13 +150,13 @@ const LogsViewer = () => {
             <CardDescription>Your recent application activity</CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-96">
+            <div className="h-96 overflow-auto border rounded-md p-2">
               {logs.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">No logs available</p>
               ) : (
                 <div className="space-y-3">
                   {logs.map((log, index) => (
-                    <div key={index} className="border rounded-lg p-3 space-y-2">
+                    <div key={index} className="border rounded-lg p-3 space-y-2 overflow-x-auto">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           {getLevelIcon(log.level)}
@@ -166,9 +167,10 @@ const LogsViewer = () => {
                             <Badge variant="outline">{log.module}</Badge>
                           )}
                         </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(log.created_at).toLocaleString()}
-                        </span>
+                        <div className="text-xs text-foreground bg-gray-100 px-2 py-1 rounded border">
+                          📅 {new Date(log.created_at).toLocaleDateString()}<br/>
+                          ⏰ {new Date(log.created_at).toLocaleTimeString()}
+                        </div>
                       </div>
                       <p className="text-sm font-medium">{log.message}</p>
                       {log.action && (
@@ -189,7 +191,7 @@ const LogsViewer = () => {
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </CardContent>
         </Card>
       </div>

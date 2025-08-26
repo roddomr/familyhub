@@ -24,8 +24,12 @@ import {
 import { useFinances } from '@/hooks/useFinances';
 import { useFamily } from '@/hooks/useFamily';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const Finances = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [showBalances, setShowBalances] = useState(true);
   const [showCreateFamily, setShowCreateFamily] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
@@ -70,8 +74,8 @@ const Finances = () => {
         <div className="space-y-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold">Finances</h1>
-              <p className="text-text-secondary mt-1">Loading your financial overview...</p>
+              <h1 className="text-3xl font-bold">{t('finance.title')}</h1>
+              <p className="text-text-secondary mt-1">{t('finance.loadingFinancialOverview')}</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -89,10 +93,10 @@ const Finances = () => {
       <DashboardLayout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center space-y-4">
-            <h2 className="text-2xl font-bold">Welcome to Family Hub!</h2>
-            <p className="text-muted-foreground">Create or join a family to start tracking finances.</p>
+            <h2 className="text-2xl font-bold">{t('finance.welcomeToFamilyHub')}</h2>
+            <p className="text-muted-foreground">{t('finance.createOrJoinFamily')}</p>
             <Button onClick={() => setShowCreateFamily(true)}>
-              Create Your First Family
+              {t('finance.createYourFirstFamily')}
             </Button>
           </div>
           <CreateFamilyDialog 
@@ -110,9 +114,9 @@ const Finances = () => {
         {/* Header */}
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold">Finances</h1>
+            <h1 className="text-3xl font-bold">{t('finance.title')}</h1>
             <p className="text-text-secondary mt-1">
-              Manage {currentFamily.name}'s financial health
+              {t('finance.manageFinancialHealth', { familyName: currentFamily.name })}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -122,11 +126,11 @@ const Finances = () => {
               onClick={() => setShowBalances(!showBalances)}
             >
               {showBalances ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-              {showBalances ? 'Hide' : 'Show'} Balances
+              {showBalances ? t('finance.hideBalances') : t('finance.showBalances')}
             </Button>
             <Button onClick={() => setShowAddTransaction(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Add Transaction
+              {t('finance.addTransaction')}
             </Button>
           </div>
         </div>
@@ -137,7 +141,7 @@ const Finances = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-text-secondary">Total Balance</p>
+                  <p className="text-sm font-medium text-text-secondary">{t('finance.totalBalance')}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <p className="text-2xl font-bold">
                       {showBalances ? formatCurrency(totalBalance) : '••••••'}
@@ -156,7 +160,7 @@ const Finances = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-text-secondary">Monthly Income</p>
+                  <p className="text-sm font-medium text-text-secondary">{t('finance.monthlyIncome')}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <p className="text-2xl font-bold text-success">
                       {showBalances ? formatCurrency(monthlyIncome) : '••••••'}
@@ -175,7 +179,7 @@ const Finances = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-text-secondary">Monthly Expenses</p>
+                  <p className="text-sm font-medium text-text-secondary">{t('finance.monthlyExpenses')}</p>
                   <div className="flex items-center space-x-2 mt-1">
                     <p className="text-2xl font-bold text-destructive">
                       {showBalances ? formatCurrency(monthlyExpenses) : '••••••'}
@@ -197,8 +201,8 @@ const Finances = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Accounts</CardTitle>
-                  <CardDescription>Your financial accounts overview</CardDescription>
+                  <CardTitle>{t('finance.accounts')}</CardTitle>
+                  <CardDescription>{t('finance.yourFinancialAccountsOverview')}</CardDescription>
                 </div>
                 <Button 
                   variant="outline" 
@@ -206,7 +210,7 @@ const Finances = () => {
                   onClick={() => setShowAddAccount(true)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Account
+                  {t('finance.addAccount')}
                 </Button>
               </div>
             </CardHeader>
@@ -214,8 +218,8 @@ const Finances = () => {
               {accounts.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Building className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No accounts added yet</p>
-                  <p className="text-sm">Add your first account to get started</p>
+                  <p>{t('finance.noAccountsAdded')}</p>
+                  <p className="text-sm">{t('finance.addFirstAccountToGetStarted')}</p>
                 </div>
               ) : (
                 accounts.map((account) => {
@@ -251,11 +255,15 @@ const Finances = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Recent Transactions</CardTitle>
-                  <CardDescription>Your latest financial activity</CardDescription>
+                  <CardTitle>{t('finance.recentTransactions')}</CardTitle>
+                  <CardDescription>{t('finance.yourLatestFinancialActivity')}</CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
-                  View All
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/finances/transactions')}
+                >
+                  {t('finance.viewAll')}
                 </Button>
               </div>
             </CardHeader>
@@ -263,8 +271,8 @@ const Finances = () => {
               {recentTransactions.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <ArrowUpRight className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No transactions yet</p>
-                  <p className="text-sm">Add your first transaction to see it here</p>
+                  <p>{t('finance.noTransactionsYet')}</p>
+                  <p className="text-sm">{t('finance.addFirstTransactionToSeeHere')}</p>
                 </div>
               ) : (
                 recentTransactions.slice(0, 5).map((transaction) => {
@@ -285,7 +293,7 @@ const Finances = () => {
                         <div>
                           <p className="font-medium text-sm">{transaction.description}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(transaction.date).toLocaleDateString()}
+                            {new Date(transaction.created_at).toLocaleDateString()} {new Date(transaction.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                           </p>
                         </div>
                       </div>
@@ -311,12 +319,12 @@ const Finances = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Budget Overview</CardTitle>
-                  <CardDescription>Track your spending against budgets</CardDescription>
+                  <CardTitle>{t('finance.budgetOverview')}</CardTitle>
+                  <CardDescription>{t('finance.trackSpendingAgainstBudgets')}</CardDescription>
                 </div>
                 <Button variant="outline" size="sm">
                   <Plus className="w-4 h-4 mr-2" />
-                  Create Budget
+                  {t('finance.createBudget')}
                 </Button>
               </div>
             </CardHeader>
@@ -337,8 +345,8 @@ const Finances = () => {
                       </div>
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span>Spent: {formatCurrency(spent)}</span>
-                          <span>Budget: {formatCurrency(budget.amount)}</span>
+                          <span>{t('finance.spent')}: {formatCurrency(spent)}</span>
+                          <span>{t('finance.budget')}: {formatCurrency(budget.amount)}</span>
                         </div>
                         <Progress 
                           value={Math.min(progress, 100)} 
@@ -348,7 +356,7 @@ const Finances = () => {
                           )}
                         />
                         <p className="text-xs text-muted-foreground">
-                          {formatCurrency(budget.amount - spent)} remaining
+                          {formatCurrency(budget.amount - spent)} {t('finance.remaining')}
                         </p>
                       </div>
                     </div>
@@ -362,8 +370,8 @@ const Finances = () => {
         {/* Quick Actions */}
         <Card className="card-elevated">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common financial tasks</CardDescription>
+            <CardTitle>{t('finance.quickActions')}</CardTitle>
+            <CardDescription>{t('finance.commonFinancialTasks')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -373,7 +381,7 @@ const Finances = () => {
                 onClick={() => setShowAddTransaction(true)}
               >
                 <Plus className="w-6 h-6 text-brand-primary" />
-                <span className="text-sm">Add Transaction</span>
+                <span className="text-sm">{t('finance.addTransaction')}</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -381,15 +389,15 @@ const Finances = () => {
                 onClick={() => setShowAddAccount(true)}
               >
                 <CreditCard className="w-6 h-6 text-brand-secondary" />
-                <span className="text-sm">Add Account</span>
+                <span className="text-sm">{t('finance.addAccount')}</span>
               </Button>
               <Button variant="outline" className="h-auto p-4 flex-col space-y-2">
                 <PiggyBank className="w-6 h-6 text-brand-accent" />
-                <span className="text-sm">Create Budget</span>
+                <span className="text-sm">{t('finance.createBudget')}</span>
               </Button>
               <Button variant="outline" className="h-auto p-4 flex-col space-y-2">
                 <TrendingUp className="w-6 h-6 text-success" />
-                <span className="text-sm">View Reports</span>
+                <span className="text-sm">{t('finance.viewReports')}</span>
               </Button>
             </div>
           </CardContent>

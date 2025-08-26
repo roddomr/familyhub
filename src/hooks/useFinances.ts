@@ -84,7 +84,7 @@ export const useFinances = () => {
               )
             `)
             .in('family_id', familyIds)
-            .order('date', { ascending: false })
+            .order('created_at', { ascending: false })
             .limit(10),
 
           // Transaction categories

@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/select';
 import { useFamily } from '@/hooks/useFamily';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLogger } from '@/hooks/useLogger';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -31,6 +33,8 @@ interface AddAccountDialogProps {
 const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDialogProps) => {
   const { currentFamily } = useFamily();
   const { user } = useAuth();
+  const { logInfo, logError } = useLogger();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   // Form state
@@ -38,22 +42,34 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
     name: '',
     type: 'checking' as string,
     balance: '',
-    currency: 'USD',
+    currency: 'MXN',
   });
 
   const accountTypes = [
-    { value: 'checking', label: 'Checking Account' },
-    { value: 'savings', label: 'Savings Account' },
-    { value: 'credit_card', label: 'Credit Card' },
-    { value: 'cash', label: 'Cash' },
-    { value: 'investment', label: 'Investment Account' },
-    { value: 'other', label: 'Other' },
+    { value: 'checking', label: t('finance.accountTypes.checking') },
+    { value: 'savings', label: t('finance.accountTypes.savings') },
+    { value: 'credit_card', label: t('finance.accountTypes.creditCard') },
+    { value: 'cash', label: t('finance.accountTypes.cash') },
+    { value: 'investment', label: t('finance.accountTypes.investment') },
+    { value: 'other', label: t('finance.accountTypes.other') },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    await logInfo('Account creation started', {
+      family_id: currentFamily?.id,
+      user_id: user?.id,
+      form_data: formData
+    }, 'finance', 'create_account');
+
     if (!currentFamily || !user || !formData.name || !formData.balance) {
-      toast.error('Please fill in all required fields');
+      await logError('Account creation failed: missing required fields', {
+        has_family: !!currentFamily,
+        has_user: !!user,
+        form_data: formData
+      }, 'finance', 'create_account', 'VALIDATION_ERROR');
+      toast.error(t('finance.fillRequired'));
       return;
     }
 
@@ -61,13 +77,27 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
     try {
       const balance = parseFloat(formData.balance);
       if (isNaN(balance)) {
-        toast.error('Please enter a valid balance');
+        await logError('Account creation failed: invalid balance', {
+          balance_input: formData.balance,
+          parsed_balance: balance
+        }, 'finance', 'create_account', 'INVALID_BALANCE');
+        toast.error(t('finance.validAmount'));
         setLoading(false);
         return;
       }
 
+      await logInfo('Inserting account into database', {
+        family_id: currentFamily.id,
+        account_data: {
+          name: formData.name,
+          type: formData.type,
+          balance: balance,
+          currency: formData.currency
+        }
+      }, 'finance', 'create_account');
+
       // Insert account
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('financial_accounts')
         .insert({
           family_id: currentFamily.id,
@@ -76,25 +106,43 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
           balance: balance,
           currency: formData.currency,
           created_by: user.id,
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        await logError('Database error creating account', {
+          error: error.message,
+          code: error.code,
+          details: error.details
+        }, 'finance', 'create_account', 'DATABASE_ERROR');
+        throw error;
+      }
 
-      toast.success('Account added successfully!');
+      await logInfo('Account created successfully', {
+        account_id: data?.[0]?.id,
+        account_name: formData.name,
+        initial_balance: balance
+      }, 'finance', 'create_account');
+
+      toast.success(t('finance.accountAdded'));
       
       // Reset form
       setFormData({
         name: '',
         type: 'checking',
         balance: '',
-        currency: 'USD',
+        currency: 'MXN',
       });
       
       onAccountAdded?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      await logError('Unexpected error creating account', {
+        error: error.message,
+        stack: error.stack
+      }, 'finance', 'create_account', 'UNEXPECTED_ERROR', error.stack);
       console.error('Error adding account:', error);
-      toast.error('Failed to add account');
+      toast.error(t('finance.failedAddAccount'));
     } finally {
       setLoading(false);
     }
@@ -104,9 +152,9 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add Financial Account</DialogTitle>
+          <DialogTitle>{t('finance.addAccountTitle')}</DialogTitle>
           <DialogDescription>
-            Add a new bank account, credit card, or other financial account.
+            {t('finance.addAccountDescription')}
           </DialogDescription>
         </DialogHeader>
         
@@ -114,10 +162,10 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
           <div className="grid gap-4 py-4">
             {/* Account Name */}
             <div className="grid gap-2">
-              <Label htmlFor="name">Account Name *</Label>
+              <Label htmlFor="name">{t('finance.accountName')} *</Label>
               <Input
                 id="name"
-                placeholder="e.g., Main Checking, Savings"
+                placeholder={t('finance.accountNamePlaceholder')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -126,13 +174,13 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
 
             {/* Account Type */}
             <div className="grid gap-2">
-              <Label htmlFor="type">Account Type *</Label>
+              <Label htmlFor="type">{t('finance.accountType')} *</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select account type" />
+                  <SelectValue placeholder={t('finance.selectAccountType')} />
                 </SelectTrigger>
                 <SelectContent>
                   {accountTypes.map((type) => (
@@ -146,12 +194,12 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
 
             {/* Initial Balance */}
             <div className="grid gap-2">
-              <Label htmlFor="balance">Initial Balance *</Label>
+              <Label htmlFor="balance">{t('finance.initialBalance')} *</Label>
               <Input
                 id="balance"
                 type="number"
                 step="0.01"
-                placeholder="0.00"
+                placeholder={t('finance.balancePlaceholder')}
                 value={formData.balance}
                 onChange={(e) => setFormData({ ...formData, balance: e.target.value })}
                 required
@@ -160,19 +208,20 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
 
             {/* Currency */}
             <div className="grid gap-2">
-              <Label htmlFor="currency">Currency</Label>
+              <Label htmlFor="currency">{t('finance.currency')}</Label>
               <Select
                 value={formData.currency}
                 onValueChange={(value) => setFormData({ ...formData, currency: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select currency" />
+                  <SelectValue placeholder={t('finance.selectCurrency')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USD">USD - US Dollar</SelectItem>
-                  <SelectItem value="EUR">EUR - Euro</SelectItem>
-                  <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                  <SelectItem value="CAD">CAD - Canadian Dollar</SelectItem>
+                  <SelectItem value="MXN">{t('finance.currencies.MXN')}</SelectItem>
+                  <SelectItem value="USD">{t('finance.currencies.USD')}</SelectItem>
+                  <SelectItem value="EUR">{t('finance.currencies.EUR')}</SelectItem>
+                  <SelectItem value="GBP">{t('finance.currencies.GBP')}</SelectItem>
+                  <SelectItem value="CAD">{t('finance.currencies.CAD')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -184,10 +233,10 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Account'}
+              {loading ? t('finance.adding') : t('finance.addAccount')}
             </Button>
           </DialogFooter>
         </form>

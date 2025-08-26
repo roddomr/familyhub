@@ -28,7 +28,10 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useFamily } from '@/hooks/useFamily';
+import { useLogger } from '@/hooks/useLogger';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface AddTransactionDialogProps {
@@ -53,6 +56,9 @@ interface Category {
 
 const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTransactionDialogProps) => {
   const { currentFamily } = useFamily();
+  const { user } = useAuth();
+  const { logInfo, logError } = useLogger();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -76,7 +82,14 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
   }, [open, currentFamily]);
 
   const loadAccountsAndCategories = async () => {
-    if (!currentFamily) return;
+    if (!currentFamily) {
+      await logError('Cannot load accounts/categories: no current family', {}, 'finance', 'load_data', 'NO_FAMILY');
+      return;
+    }
+
+    await logInfo('Loading accounts and categories', {
+      family_id: currentFamily.id
+    }, 'finance', 'load_data');
 
     try {
       // Load accounts
@@ -87,7 +100,13 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
         .eq('is_active', true)
         .order('name');
 
-      if (accountsError) throw accountsError;
+      if (accountsError) {
+        await logError('Error loading accounts', {
+          error: accountsError.message,
+          code: accountsError.code
+        }, 'finance', 'load_accounts', 'DATABASE_ERROR');
+        throw accountsError;
+      }
 
       // Load categories
       const { data: categoriesData, error: categoriesError } = await supabase
@@ -96,11 +115,26 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
         .eq('family_id', currentFamily.id)
         .order('name');
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        await logError('Error loading categories', {
+          error: categoriesError.message,
+          code: categoriesError.code
+        }, 'finance', 'load_categories', 'DATABASE_ERROR');
+        throw categoriesError;
+      }
+
+      await logInfo('Successfully loaded accounts and categories', {
+        accounts_count: accountsData?.length || 0,
+        categories_count: categoriesData?.length || 0
+      }, 'finance', 'load_data');
 
       setAccounts(accountsData || []);
       setCategories(categoriesData || []);
-    } catch (error) {
+    } catch (error: any) {
+      await logError('Unexpected error loading data', {
+        error: error.message,
+        stack: error.stack
+      }, 'finance', 'load_data', 'UNEXPECTED_ERROR', error.stack);
       console.error('Error loading accounts and categories:', error);
       toast.error('Failed to load accounts and categories');
     }
@@ -108,8 +142,28 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentFamily || !formData.description || !formData.amount || !formData.accountId) {
-      toast.error('Please fill in all required fields');
+    
+    await logInfo('Transaction creation started', {
+      family_id: currentFamily?.id,
+      form_data: formData,
+      date: format(date, 'yyyy-MM-dd'),
+      accounts_available: accounts.length,
+      categories_available: categories.length
+    }, 'finance', 'create_transaction');
+
+    if (!currentFamily || !user || !formData.description || !formData.amount || !formData.accountId) {
+      await logError('Transaction creation failed: missing required fields', {
+        has_family: !!currentFamily,
+        has_user: !!user,
+        form_data: formData,
+        missing_fields: {
+          description: !formData.description,
+          amount: !formData.amount,
+          account: !formData.accountId,
+          user: !user
+        }
+      }, 'finance', 'create_transaction', 'VALIDATION_ERROR');
+      toast.error(t('finance.fillRequired'));
       return;
     }
 
@@ -117,13 +171,29 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
     try {
       const amount = parseFloat(formData.amount);
       if (isNaN(amount) || amount <= 0) {
-        toast.error('Please enter a valid amount');
+        await logError('Transaction creation failed: invalid amount', {
+          amount_input: formData.amount,
+          parsed_amount: amount
+        }, 'finance', 'create_transaction', 'INVALID_AMOUNT');
+        toast.error(t('finance.validAmount'));
         setLoading(false);
         return;
       }
 
+      await logInfo('Inserting transaction into database', {
+        transaction_data: {
+          family_id: currentFamily.id,
+          account_id: formData.accountId,
+          category_id: formData.categoryId,
+          description: formData.description,
+          amount: amount,
+          type: formData.type,
+          date: format(date, 'yyyy-MM-dd')
+        }
+      }, 'finance', 'create_transaction');
+
       // Insert transaction
-      const { error: transactionError } = await supabase
+      const { data: transactionData, error: transactionError } = await supabase
         .from('transactions')
         .insert({
           family_id: currentFamily.id,
@@ -134,9 +204,23 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
           type: formData.type,
           date: format(date, 'yyyy-MM-dd'),
           notes: formData.notes || null,
-        });
+          created_by: user.id,
+        })
+        .select();
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        await logError('Database error creating transaction', {
+          error: transactionError.message,
+          code: transactionError.code,
+          details: transactionError.details
+        }, 'finance', 'create_transaction', 'DATABASE_ERROR');
+        throw transactionError;
+      }
+
+      await logInfo('Transaction created, updating account balance', {
+        transaction_id: transactionData?.[0]?.id,
+        balance_change: formData.type === 'income' ? amount : -amount
+      }, 'finance', 'create_transaction');
 
       // Update account balance
       const balanceChange = formData.type === 'income' ? amount : -amount;
@@ -146,10 +230,27 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
       });
 
       if (balanceError) {
+        await logError('Failed to update account balance', {
+          account_id: formData.accountId,
+          balance_change: balanceChange,
+          error: balanceError.message
+        }, 'finance', 'update_balance', 'BALANCE_UPDATE_ERROR');
         console.warn('Failed to update account balance:', balanceError);
+      } else {
+        await logInfo('Account balance updated successfully', {
+          account_id: formData.accountId,
+          balance_change: balanceChange
+        }, 'finance', 'update_balance');
       }
 
-      toast.success('Transaction added successfully!');
+      await logInfo('Transaction created successfully', {
+        transaction_id: transactionData?.[0]?.id,
+        description: formData.description,
+        amount: amount,
+        type: formData.type
+      }, 'finance', 'create_transaction');
+
+      toast.success(t('finance.transactionAdded'));
       
       // Reset form
       setFormData({
@@ -164,7 +265,11 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
       
       onTransactionAdded?.();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      await logError('Unexpected error creating transaction', {
+        error: error.message,
+        stack: error.stack
+      }, 'finance', 'create_transaction', 'UNEXPECTED_ERROR', error.stack);
       console.error('Error adding transaction:', error);
       toast.error('Failed to add transaction');
     } finally {
@@ -178,9 +283,9 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add Transaction</DialogTitle>
+          <DialogTitle>{t('finance.addTransactionTitle')}</DialogTitle>
           <DialogDescription>
-            Record a new income or expense transaction for your family.
+            {t('finance.addTransactionDescription')}
           </DialogDescription>
         </DialogHeader>
         
@@ -188,7 +293,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
           <div className="grid gap-4 py-4">
             {/* Transaction Type */}
             <div className="grid gap-2">
-              <Label htmlFor="type">Type *</Label>
+              <Label htmlFor="type">{t('common.type')} *</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value: 'income' | 'expense') => {
@@ -196,18 +301,18 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder={t('finance.selectType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="expense">Expense</SelectItem>
-                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="expense">{t('finance.expense')}</SelectItem>
+                  <SelectItem value="income">{t('finance.income')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Description */}
             <div className="grid gap-2">
-              <Label htmlFor="description">Description *</Label>
+              <Label htmlFor="description">{t('common.description')} *</Label>
               <Input
                 id="description"
                 placeholder="e.g., Grocery shopping, Salary"
@@ -219,7 +324,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
             {/* Amount */}
             <div className="grid gap-2">
-              <Label htmlFor="amount">Amount *</Label>
+              <Label htmlFor="amount">{t('common.amount')} *</Label>
               <Input
                 id="amount"
                 type="number"
@@ -234,7 +339,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
             {/* Date */}
             <div className="grid gap-2">
-              <Label>Date *</Label>
+              <Label>{t('common.date')} *</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -261,13 +366,13 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
             {/* Account */}
             <div className="grid gap-2">
-              <Label htmlFor="account">Account *</Label>
+              <Label htmlFor="account">{t('finance.account')} *</Label>
               <Select
                 value={formData.accountId}
                 onValueChange={(value) => setFormData({ ...formData, accountId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select account" />
+                  <SelectValue placeholder={t('finance.selectAccount')} />
                 </SelectTrigger>
                 <SelectContent>
                   {accounts.map((account) => (
@@ -281,13 +386,13 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
             {/* Category */}
             <div className="grid gap-2">
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">{t('finance.category')}</Label>
               <Select
                 value={formData.categoryId}
                 onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category (optional)" />
+                  <SelectValue placeholder={t('finance.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
                   {filteredCategories.map((category) => (
@@ -307,7 +412,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
             {/* Notes */}
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{t('common.notes')}</Label>
               <Textarea
                 id="notes"
                 placeholder="Additional notes (optional)"
@@ -324,10 +429,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Adding...' : 'Add Transaction'}
+              {loading ? t('finance.adding') : t('finance.addTransaction')}
             </Button>
           </DialogFooter>
         </form>

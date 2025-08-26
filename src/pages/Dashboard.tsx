@@ -14,14 +14,16 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useTranslation } from 'react-i18next';
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const modules = [
     {
-      title: 'Habit Tracker',
-      description: 'Build and maintain healthy family habits',
+      title: t('dashboard.modules.habitTracker.title'),
+      description: t('dashboard.modules.habitTracker.description'),
       icon: Target,
       color: 'text-brand-primary',
       bgColor: 'bg-brand-primary/10',
@@ -30,8 +32,8 @@ const Dashboard = () => {
       available: true
     },
     {
-      title: 'Finance Tracker',
-      description: 'Manage family budget and expenses',
+      title: t('dashboard.modules.financeTracker.title'),
+      description: t('dashboard.modules.financeTracker.description'),
       icon: DollarSign,
       color: 'text-brand-secondary',
       bgColor: 'bg-brand-secondary/10',
@@ -40,8 +42,8 @@ const Dashboard = () => {
       available: true
     },
     {
-      title: 'To-Do Lists',
-      description: 'Organize family tasks and responsibilities',
+      title: t('dashboard.modules.todoLists.title'),
+      description: t('dashboard.modules.todoLists.description'),
       icon: CheckSquare,
       color: 'text-brand-accent',
       bgColor: 'bg-brand-accent/10',
@@ -50,8 +52,8 @@ const Dashboard = () => {
       available: true
     },
     {
-      title: 'Chores Tracker',
-      description: 'Assign and track household chores',
+      title: t('dashboard.modules.choresTracker.title'),
+      description: t('dashboard.modules.choresTracker.description'),
       icon: Calendar,
       color: 'text-purple-500',
       bgColor: 'bg-purple-100',
@@ -62,10 +64,10 @@ const Dashboard = () => {
   ];
 
   const stats = [
-    { label: 'Active Habits', value: '12', trend: '+3' },
-    { label: 'Monthly Savings', value: '$1,240', trend: '+12%' },
-    { label: 'Pending Tasks', value: '8', trend: '-2' },
-    { label: 'Completed Chores', value: '24', trend: '+6' }
+    { label: t('dashboard.stats.activeHabits'), value: '12', trend: '+3' },
+    { label: t('dashboard.stats.monthlySavings'), value: '$1,240', trend: '+12%' },
+    { label: t('dashboard.stats.pendingTasks'), value: '8', trend: '-2' },
+    { label: t('dashboard.stats.completedChores'), value: '24', trend: '+6' }
   ];
 
   return (
@@ -73,9 +75,9 @@ const Dashboard = () => {
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('nav.dashboard')}</h1>
           <p className="text-text-secondary">
-            Welcome back! Here's what's happening with your family.
+            {t('dashboard.welcomeMessage')}
           </p>
         </div>
 
@@ -116,7 +118,7 @@ const Dashboard = () => {
                     </div>
                     {!module.available && (
                       <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
-                        Coming Soon
+                        {t('common.comingSoon')}
                       </span>
                     )}
                   </div>
@@ -131,7 +133,7 @@ const Dashboard = () => {
                   {module.available && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-text-secondary">Progress</span>
+                        <span className="text-text-secondary">{t('common.progress')}</span>
                         <span className="font-medium">{module.progress}%</span>
                       </div>
                       <Progress value={module.progress} className="h-2" />
@@ -145,11 +147,11 @@ const Dashboard = () => {
                   >
                     {module.available ? (
                       <>
-                        Open Module
+                        {t('dashboard.openModule')}
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     ) : (
-                      'Coming Soon'
+                      t('common.comingSoon')
                     )}
                   </Button>
                 </CardContent>
@@ -163,10 +165,10 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Plus className="w-5 h-5" />
-              <span>Quick Actions</span>
+              <span>{t('dashboard.quickActionsTitle')}</span>
             </CardTitle>
             <CardDescription>
-              Quickly add new items to your family hub
+              {t('dashboard.quickActionsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -177,7 +179,7 @@ const Dashboard = () => {
                 onClick={() => navigate('/habits')}
               >
                 <Target className="w-6 h-6 text-brand-primary" />
-                <span>Add New Habit</span>
+                <span>{t('dashboard.quickActions.addNewHabit')}</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -185,7 +187,7 @@ const Dashboard = () => {
                 onClick={() => navigate('/finances')}
               >
                 <DollarSign className="w-6 h-6 text-brand-secondary" />
-                <span>Log Expense</span>
+                <span>{t('dashboard.quickActions.logExpense')}</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -193,7 +195,7 @@ const Dashboard = () => {
                 onClick={() => navigate('/todos')}
               >
                 <CheckSquare className="w-6 h-6 text-brand-accent" />
-                <span>Add New Task</span>
+                <span>{t('dashboard.quickActions.addNewTask')}</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -201,7 +203,7 @@ const Dashboard = () => {
                 onClick={() => navigate('/chores')}
               >
                 <Calendar className="w-6 h-6 text-purple-500" />
-                <span>Assign Chore</span>
+                <span>{t('dashboard.quickActions.assignChore')}</span>
               </Button>
             </div>
           </CardContent>

@@ -4,10 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Habits from "./pages/Habits";
 import Finances from "./pages/Finances";
+import AllTransactions from "./pages/AllTransactions";
 import Chores from "./pages/Chores";
 import Todos from "./pages/Todos";
 import Settings from "./pages/Settings";
@@ -18,8 +20,9 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -39,6 +42,11 @@ const App = () => (
           <Route path="/finances" element={
             <ProtectedRoute>
               <Finances />
+            </ProtectedRoute>
+          } />
+          <Route path="/finances/transactions" element={
+            <ProtectedRoute>
+              <AllTransactions />
             </ProtectedRoute>
           } />
           {/* Placeholder routes for future modules */}
@@ -61,8 +69,9 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
+        </TooltipProvider>
+      </AuthProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 

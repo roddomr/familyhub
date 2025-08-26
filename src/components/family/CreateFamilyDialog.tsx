@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFamily } from '@/hooks/useFamily';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface CreateFamilyDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ const CreateFamilyDialog = ({ open, onOpenChange }: CreateFamilyDialogProps) => 
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const { createFamily } = useFamily();
+  const { t } = useTranslation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,12 +33,12 @@ const CreateFamilyDialog = ({ open, onOpenChange }: CreateFamilyDialogProps) => 
     setLoading(true);
     try {
       await createFamily(name.trim(), description.trim() || undefined);
-      toast.success('Family created successfully!');
+      toast.success(t('family.familyCreatedSuccess'));
       onOpenChange(false);
       setName('');
       setDescription('');
     } catch (error) {
-      toast.error('Failed to create family');
+      toast.error(t('family.failedCreateFamily'));
     } finally {
       setLoading(false);
     }
@@ -46,28 +48,28 @@ const CreateFamilyDialog = ({ open, onOpenChange }: CreateFamilyDialogProps) => 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Your Family</DialogTitle>
+          <DialogTitle>{t('family.createFamily')}</DialogTitle>
           <DialogDescription>
-            Set up your family to start tracking finances together.
+            {t('family.createFamilyDescription')}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="name">Family Name *</Label>
+              <Label htmlFor="name">{t('family.familyName')} *</Label>
               <Input
                 id="name"
-                placeholder="The Smith Family"
+                placeholder={t('family.familyNamePlaceholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">{t('family.descriptionOptional')}</Label>
               <Input
                 id="description"
-                placeholder="A brief description of your family"
+                placeholder={t('family.descriptionPlaceholder')}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
@@ -79,10 +81,10 @@ const CreateFamilyDialog = ({ open, onOpenChange }: CreateFamilyDialogProps) => 
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={loading || !name.trim()}>
-              {loading ? 'Creating...' : 'Create Family'}
+              {loading ? t('family.creating') : t('family.createFamily')}
             </Button>
           </DialogFooter>
         </form>
