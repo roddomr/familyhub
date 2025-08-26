@@ -44,6 +44,23 @@ const resources = {
         progress: 'Progress',
         pickDate: 'Pick a date',
         back: 'Back',
+        toggleTheme: 'Toggle theme',
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System',
+        dismiss: 'Dismiss',
+      },
+
+      // PWA
+      pwa: {
+        installTitle: 'Install Family Hub',
+        installDescription: 'Install the app on your device for a better experience and offline access.',
+        install: 'Install App',
+        installSuccess: 'App installed successfully!',
+        updateAvailable: 'App update available',
+        updateDescription: 'A new version of the app is available.',
+        update: 'Update Now',
+        updateSuccess: 'App updated successfully!',
       },
       
       // Auth
@@ -320,6 +337,23 @@ const resources = {
         progress: 'Progreso',
         pickDate: 'Seleccionar fecha',
         back: 'Volver',
+        toggleTheme: 'Cambiar tema',
+        light: 'Claro',
+        dark: 'Oscuro',
+        system: 'Sistema',
+        dismiss: 'Descartar',
+      },
+
+      // PWA
+      pwa: {
+        installTitle: 'Instalar Family Hub',
+        installDescription: 'Instala la aplicación en tu dispositivo para una mejor experiencia y acceso sin conexión.',
+        install: 'Instalar App',
+        installSuccess: '¡Aplicación instalada correctamente!',
+        updateAvailable: 'Actualización disponible',
+        updateDescription: 'Una nueva versión de la aplicación está disponible.',
+        update: 'Actualizar Ahora',
+        updateSuccess: '¡Aplicación actualizada correctamente!',
       },
       
       // Autenticación

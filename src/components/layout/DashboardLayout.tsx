@@ -24,6 +24,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { LanguageSelector } from '@/components/ui/language-selector';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -86,7 +88,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             })}
           </nav>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <LanguageSelector />
+            <ThemeToggle />
             <Button variant="ghost" size="sm" className="relative">
               <Bell className="w-4 h-4" />
               <span className="absolute -top-1 -right-1 w-2 h-2 bg-brand-accent rounded-full"></span>

@@ -3,8 +3,10 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { PWAUpdatePrompt } from "@/components/ui/pwa-update-prompt";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Habits from "./pages/Habits";
@@ -20,11 +22,13 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <AuthProvider>
-        <TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <LanguageProvider>
+        <AuthProvider>
+          <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PWAUpdatePrompt />
         <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -69,9 +73,10 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </LanguageProvider>
+          </TooltipProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

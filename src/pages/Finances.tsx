@@ -302,7 +302,11 @@ const Finances = () => {
                           "font-semibold text-sm",
                           isIncome ? "text-success" : "text-destructive"
                         )}>
-                          {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                          {showBalances ? (
+                            `${isIncome ? '+' : '-'}${formatCurrency(Math.abs(transaction.amount))}`
+                          ) : (
+                            '••••••'
+                          )}
                         </p>
                       </div>
                     </div>

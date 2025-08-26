@@ -17,7 +17,9 @@ import {
   ArrowDownLeft, 
   Search,
   ArrowLeft,
-  Filter
+  Filter,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFamily } from '@/hooks/useFamily';
@@ -53,6 +55,7 @@ const AllTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showBalances, setShowBalances] = useState(true);
   const [filters, setFilters] = useState({
     type: 'all', // 'all', 'income', 'expense'
     dateRange: 'all', // 'all', 'today', 'week', 'month', 'year'
@@ -217,34 +220,44 @@ const AllTransactions = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
             <Button
               variant="outline"
               size="sm"
               onClick={() => navigate('/finances')}
+              className="self-start"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t('common.back')}
             </Button>
             <div>
-              <h1 className="text-3xl font-bold">{t('finance.allTransactions')}</h1>
-              <p className="text-text-secondary mt-1">
+              <h1 className="text-2xl sm:text-3xl font-bold">{t('finance.allTransactions')}</h1>
+              <p className="text-text-secondary mt-1 text-sm sm:text-base">
                 {t('finance.allTransactionsDescription')}
               </p>
             </div>
           </div>
           
           {/* Search and Filters */}
-          <div className="flex items-center space-x-3">
-            <div className="relative">
+          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-3">
+            <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 placeholder={t('finance.searchTransactions')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64"
+                className="pl-10 w-full sm:w-64"
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowBalances(!showBalances)}
+              className="space-x-2"
+            >
+              {showBalances ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span className="hidden sm:inline">{showBalances ? t('finance.hide') : t('finance.show')}</span>
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -412,7 +425,11 @@ const AllTransactions = () => {
                           "font-semibold text-lg",
                           isIncome ? "text-success" : "text-destructive"
                         )}>
-                          {isIncome ? '+' : '-'}{formatCurrency(Math.abs(transaction.amount))}
+                          {showBalances ? (
+                            `${isIncome ? '+' : '-'}${formatCurrency(Math.abs(transaction.amount))}`
+                          ) : (
+                            '••••••'
+                          )}
                         </p>
                       </div>
                     </div>
