@@ -209,7 +209,7 @@ const AllTransactions = () => {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-muted-foreground">No family selected</p>
+          <p className="text-muted-foreground">{t('finance.noFamilySelected')}</p>
         </div>
       </DashboardLayout>
     );

@@ -5,8 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLogger } from '@/hooks/useLogger';
 import { RefreshCw, AlertCircle, Info, AlertTriangle, Bug } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const LogsViewer = () => {
+  const { t } = useTranslation();
   const { getUserLogs, getRecentErrors, logInfo, logError } = useLogger();
   const [logs, setLogs] = useState<any[]>([]);
   const [errors, setErrors] = useState<any[]>([]);
@@ -78,14 +80,14 @@ const LogsViewer = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Debug Logs</h2>
+        <h2 className="text-2xl font-bold">{t('finance.debugLogs')}</h2>
         <div className="flex space-x-2">
           <Button onClick={testLogging} variant="outline" size="sm">
-            Test Logging
+            {t('finance.testLogging')}
           </Button>
           <Button onClick={loadLogs} disabled={loading} size="sm">
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('finance.refresh')}
           </Button>
         </div>
       </div>
@@ -94,13 +96,13 @@ const LogsViewer = () => {
         {/* Recent Errors */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-destructive">Recent Errors</CardTitle>
-            <CardDescription>System-wide errors in the last 24 hours</CardDescription>
+            <CardTitle className="text-destructive">{t('finance.recentErrors')}</CardTitle>
+            <CardDescription>{t('finance.systemWideErrorsLast24Hours')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-96 overflow-auto border rounded-md p-2">
               {errors.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No recent errors</p>
+                <p className="text-muted-foreground text-center py-8">{t('finance.noRecentErrors')}</p>
               ) : (
                 <div className="space-y-3">
                   {errors.map((error, index) => (
@@ -122,10 +124,10 @@ const LogsViewer = () => {
                       </div>
                       <p className="text-sm font-medium">{error.message}</p>
                       {error.action && (
-                        <p className="text-xs text-muted-foreground">Action: {error.action}</p>
+                        <p className="text-xs text-muted-foreground">{t('finance.action')}: {error.action}</p>
                       )}
                       {error.error_code && (
-                        <p className="text-xs text-muted-foreground">Code: {error.error_code}</p>
+                        <p className="text-xs text-muted-foreground">{t('finance.code')}: {error.error_code}</p>
                       )}
                       {error.details && (
                         <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
@@ -146,13 +148,13 @@ const LogsViewer = () => {
         {/* User Logs */}
         <Card>
           <CardHeader>
-            <CardTitle>Your Activity Logs</CardTitle>
-            <CardDescription>Your recent application activity</CardDescription>
+            <CardTitle>{t('finance.yourActivityLogs')}</CardTitle>
+            <CardDescription>{t('finance.yourRecentApplicationActivity')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-96 overflow-auto border rounded-md p-2">
               {logs.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No logs available</p>
+                <p className="text-muted-foreground text-center py-8">{t('finance.noLogsAvailable')}</p>
               ) : (
                 <div className="space-y-3">
                   {logs.map((log, index) => (
@@ -174,10 +176,10 @@ const LogsViewer = () => {
                       </div>
                       <p className="text-sm font-medium">{log.message}</p>
                       {log.action && (
-                        <p className="text-xs text-muted-foreground">Action: {log.action}</p>
+                        <p className="text-xs text-muted-foreground">{t('finance.action')}: {log.action}</p>
                       )}
                       {log.error_code && (
-                        <p className="text-xs text-muted-foreground">Code: {log.error_code}</p>
+                        <p className="text-xs text-muted-foreground">{t('finance.code')}: {log.error_code}</p>
                       )}
                       {log.details && (
                         <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">

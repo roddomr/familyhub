@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx supabase:*)",
+      "Bash(node:*)",
+      "Bash(del test-family-insights.js test-basic-connection.js)",
+      "Bash(npm run test:run:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

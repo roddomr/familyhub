@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,17 +7,23 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { PWAUpdatePrompt } from "@/components/ui/pwa-update-prompt";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Habits from "./pages/Habits";
-import Finances from "./pages/Finances";
-import AllTransactions from "./pages/AllTransactions";
-import Chores from "./pages/Chores";
-import Todos from "./pages/Todos";
-import Settings from "./pages/Settings";
+import { PageLoading } from "@/components/ui/page-loading";
+import { NetworkStatus } from "@/components/ui/loading-states";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import NotFound from "./pages/NotFound";
+
+// Lazy load pages for better code splitting
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Habits = lazy(() => import("./pages/Habits"));
+const Finances = lazy(() => import("./pages/Finances"));
+const Analytics = lazy(() => import("./pages/Analytics"));
+const AllTransactions = lazy(() => import("./pages/AllTransactions"));
+const Chores = lazy(() => import("./pages/Chores"));
+const Todos = lazy(() => import("./pages/Todos"));
+const Settings = lazy(() => import("./pages/Settings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -25,14 +32,17 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <LanguageProvider>
         <AuthProvider>
-          <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <PWAUpdatePrompt />
-        <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
+          <ErrorBoundary>
+            <TooltipProvider>
+              <NetworkStatus />
+              <Toaster />
+              <Sonner />
+              <PWAUpdatePrompt />
+              <BrowserRouter>
+        <Suspense fallback={<PageLoading />}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
@@ -53,6 +63,11 @@ const App = () => (
               <AllTransactions />
             </ProtectedRoute>
           } />
+          <Route path="/analytics" element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          } />
           {/* Placeholder routes for future modules */}
           <Route path="/todos" element={
             <ProtectedRoute>
@@ -71,9 +86,11 @@ const App = () => (
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
-        </BrowserRouter>
-          </TooltipProvider>
+          </Routes>
+              </Suspense>
+              </BrowserRouter>
+            </TooltipProvider>
+          </ErrorBoundary>
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>

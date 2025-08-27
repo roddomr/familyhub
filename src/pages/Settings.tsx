@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import LogsViewer from '@/components/debug/LogsViewer';
 import { LanguageSelector } from '@/components/ui/language-selector';
+import { ErrorHandlingDemo } from '@/components/demo/ErrorHandlingDemo';
 import { useTranslation } from 'react-i18next';
 import { 
   User, 
@@ -15,7 +16,8 @@ import {
   Palette, 
   Database,
   LogOut,
-  Settings as SettingsIcon 
+  Settings as SettingsIcon,
+  AlertTriangle 
 } from 'lucide-react';
 
 const Settings = () => {
@@ -49,12 +51,13 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="profile">{t('settings.profile')}</TabsTrigger>
             <TabsTrigger value="security">{t('settings.security')}</TabsTrigger>
             <TabsTrigger value="notifications">{t('settings.notifications')}</TabsTrigger>
             <TabsTrigger value="appearance">{t('settings.appearance')}</TabsTrigger>
             <TabsTrigger value="debug">{t('settings.debug')}</TabsTrigger>
+            <TabsTrigger value="error-demo">Error Demo</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
@@ -180,6 +183,22 @@ const Settings = () => {
                 <LogsViewer />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Error Handling Demo Tab */}
+          <TabsContent value="error-demo">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="w-5 h-5" />
+                  <div>
+                    <CardTitle>Error Handling System Demo</CardTitle>
+                    <CardDescription>Interactive demonstration of enhanced error handling features</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+            <ErrorHandlingDemo />
           </TabsContent>
         </Tabs>
       </div>

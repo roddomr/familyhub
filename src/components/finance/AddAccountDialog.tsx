@@ -22,7 +22,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLogger } from '@/hooks/useLogger';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { LoadingButton } from '@/components/ui/loading-states';
+import { EnhancedInput, useValidation, validateRequired, validateAmount } from '@/components/ui/form-field';
 
 interface AddAccountDialogProps {
   open: boolean;
@@ -35,6 +37,8 @@ const AddAccountDialog = ({ open, onOpenChange, onAccountAdded }: AddAccountDial
   const { user } = useAuth();
   const { logInfo, logError } = useLogger();
   const { t } = useTranslation();
+  const toast = useEnhancedToast();
+  const validation = useValidation();
   const [loading, setLoading] = useState(false);
 
   // Form state

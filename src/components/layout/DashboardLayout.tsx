@@ -18,7 +18,8 @@ import {
   Settings,
   LogOut,
   Users,
-  Bell
+  Bell,
+  BarChart3
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,6 +42,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { icon: Home, label: t('nav.dashboard'), path: '/dashboard' },
     { icon: Target, label: t('nav.habits'), path: '/habits' },
     { icon: DollarSign, label: t('nav.finances'), path: '/finances' },
+    { icon: BarChart3, label: t('nav.analytics'), path: '/analytics' },
     { icon: CheckSquare, label: t('nav.todos'), path: '/todos' },
     { icon: Calendar, label: t('nav.chores'), path: '/chores' },
   ];
@@ -48,10 +50,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const handleLogout = async () => {
     try {
       await signOut();
-      toast.success(t('auth.signOut') + ' exitosamente');
+      toast.success(t('auth.signOutSuccess'));
       navigate('/login');
     } catch (error) {
-      toast.error('Error al cerrar sesión');
+      toast.error(t('auth.signOutError'));
     }
   };
 

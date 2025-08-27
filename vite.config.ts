@@ -91,4 +91,54 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React ecosystem
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          
+          // UI Libraries
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-label',
+            '@radix-ui/react-select',
+            '@radix-ui/react-toast',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-scroll-area'
+          ],
+          
+          // Data & State Management
+          'data-vendor': [
+            '@tanstack/react-query',
+            '@supabase/supabase-js',
+            'zod',
+            '@hookform/resolvers'
+          ],
+          
+          // Internationalization
+          'i18n-vendor': ['i18next', 'react-i18next'],
+          
+          // Icons & Styling
+          'icons-vendor': ['lucide-react'],
+          'theme-vendor': ['next-themes'],
+          
+          // Form handling
+          'form-vendor': ['react-hook-form'],
+          
+          // Charts (if used extensively)
+          'chart-vendor': ['recharts'],
+          
+          // Date utilities
+          'date-vendor': ['date-fns']
+        }
+      }
+    },
+    // Increase chunk size warning limit to 600KB
+    chunkSizeWarningLimit: 600,
+  },
 })

@@ -7,8 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Lock, Mail, AlertCircle } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { LoadingButton } from '@/components/ui/loading-states';
+import { EnhancedInput, useValidation, validateRequired, validateEmail, validatePassword } from '@/components/ui/form-field';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -19,6 +21,8 @@ const Login = () => {
   const location = useLocation();
   const { user, signIn, signUp } = useAuth();
   const { t } = useTranslation();
+  const toast = useEnhancedToast();
+  const validation = useValidation();
 
   // Redirect if already logged in
   useEffect(() => {
@@ -36,14 +40,20 @@ const Login = () => {
       const { error } = await signIn(email, password);
       
       if (error) {
-        toast.error(error.message || 'Error al iniciar sesión');
+        toast.authError(error);
       } else {
-        toast.success(t('auth.welcomeBack') + '!');
+        toast.success({
+          title: t('common.success'),
+          description: t('auth.welcomeBackSuccess')
+        });
         const from = (location.state as any)?.from?.pathname || '/dashboard';
         navigate(from, { replace: true });
       }
     } catch (error) {
-      toast.error('Ocurrió un error inesperado');
+      toast.error({
+        title: t('errors.unexpectedError'),
+        description: t('common.unexpectedError')
+      });
     } finally {
       setLoading(false);
     }
@@ -57,12 +67,15 @@ const Login = () => {
       const { error } = await signUp(email, password, { name });
       
       if (error) {
-        toast.error(error.message || 'Error al crear la cuenta');
+        toast.error(error.message || t('auth.signUpError'));
       } else {
-        toast.success('¡Cuenta creada! Por favor revisa tu email para verificar tu cuenta.');
+        toast.success(t('auth.signUpSuccess'));
       }
     } catch (error) {
-      toast.error('Ocurrió un error inesperado');
+      toast.error({
+        title: t('errors.unexpectedError'),
+        description: t('common.unexpectedError')
+      });
     } finally {
       setLoading(false);
     }

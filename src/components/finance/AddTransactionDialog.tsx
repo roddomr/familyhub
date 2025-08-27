@@ -32,7 +32,9 @@ import { useLogger } from '@/hooks/useLogger';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import { LoadingButton } from '@/components/ui/loading-states';
+import { EnhancedInput, EnhancedTextarea, useValidation, validateRequired, validateAmount } from '@/components/ui/form-field';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 interface AddTransactionDialogProps {
   open: boolean;
@@ -59,6 +61,8 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
   const { user } = useAuth();
   const { logInfo, logError } = useLogger();
   const { t } = useTranslation();
+  const toast = useEnhancedToast();
+  const validation = useValidation();
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -136,7 +140,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
         stack: error.stack
       }, 'finance', 'load_data', 'UNEXPECTED_ERROR', error.stack);
       console.error('Error loading accounts and categories:', error);
-      toast.error('Failed to load accounts and categories');
+      toast.apiError(error, 'loading accounts and categories');
     }
   };
 
@@ -163,7 +167,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
           user: !user
         }
       }, 'finance', 'create_transaction', 'VALIDATION_ERROR');
-      toast.error(t('finance.fillRequired'));
+      toast.validationError({
+        title: t('errors.validationError'),
+        description: t('finance.fillRequired')
+      });
       return;
     }
 
@@ -175,7 +182,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
           amount_input: formData.amount,
           parsed_amount: amount
         }, 'finance', 'create_transaction', 'INVALID_AMOUNT');
-        toast.error(t('finance.validAmount'));
+        toast.validationError({
+          title: t('errors.validationError'),
+          description: t('finance.validAmount')
+        });
         setLoading(false);
         return;
       }
@@ -250,7 +260,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
         type: formData.type
       }, 'finance', 'create_transaction');
 
-      toast.success(t('finance.transactionAdded'));
+      toast.success({
+        title: t('common.success'),
+        description: t('finance.transactionAdded')
+      });
       
       // Reset form
       setFormData({
@@ -271,7 +284,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
         stack: error.stack
       }, 'finance', 'create_transaction', 'UNEXPECTED_ERROR', error.stack);
       console.error('Error adding transaction:', error);
-      toast.error('Failed to add transaction');
+      toast.apiError(error, 'creating transaction');
     } finally {
       setLoading(false);
     }
@@ -315,7 +328,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
               <Label htmlFor="description">{t('common.description')} *</Label>
               <Input
                 id="description"
-                placeholder="e.g., Grocery shopping, Salary"
+                placeholder={t('finance.descriptionPlaceholder')}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 required
@@ -330,7 +343,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="0.00"
+                placeholder={t('finance.amountPlaceholder')}
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 required
@@ -350,7 +363,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
+                    {date ? format(date, "PPP") : <span>{t('finance.pickDate')}</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -415,7 +428,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
               <Label htmlFor="notes">{t('common.notes')}</Label>
               <Textarea
                 id="notes"
-                placeholder="Additional notes (optional)"
+                placeholder={t('finance.notesPlaceholder')}
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
@@ -431,9 +444,13 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
             >
               {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? t('finance.adding') : t('finance.addTransaction')}
-            </Button>
+            <LoadingButton 
+              type="submit" 
+              loading={loading}
+              loadingText={t('finance.adding')}
+            >
+              {t('finance.addTransaction')}
+            </LoadingButton>
           </DialogFooter>
         </form>
       </DialogContent>
