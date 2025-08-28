@@ -20,6 +20,7 @@ const Habits = lazy(() => import("./pages/Habits"));
 const Finances = lazy(() => import("./pages/Finances"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const AllTransactions = lazy(() => import("./pages/AllTransactions"));
+const BudgetView = lazy(() => import("./pages/BudgetView"));
 const Chores = lazy(() => import("./pages/Chores"));
 const Todos = lazy(() => import("./pages/Todos"));
 const Settings = lazy(() => import("./pages/Settings"));
@@ -61,6 +62,11 @@ const App = () => (
           <Route path="/finances/transactions" element={
             <ProtectedRoute>
               <AllTransactions />
+            </ProtectedRoute>
+          } />
+          <Route path="/finances/budgets" element={
+            <ProtectedRoute>
+              <BudgetView />
             </ProtectedRoute>
           } />
           <Route path="/analytics" element={

@@ -19,7 +19,8 @@ import {
   ArrowLeft,
   Filter,
   Eye,
-  EyeOff
+  EyeOff,
+  Edit
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFamily } from '@/hooks/useFamily';
@@ -27,6 +28,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import EditTransactionDialog from '@/components/finance/EditTransactionDialog';
 
 interface Transaction {
   id: string;
@@ -36,6 +38,8 @@ interface Transaction {
   date: string;
   created_at: string;
   notes?: string;
+  account_id: string;
+  category_id?: string;
   transaction_categories?: {
     name: string;
     color: string;
@@ -56,6 +60,7 @@ const AllTransactions = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showBalances, setShowBalances] = useState(true);
+  const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
   const [filters, setFilters] = useState({
     type: 'all', // 'all', 'income', 'expense'
     dateRange: 'all', // 'all', 'today', 'week', 'month', 'year'
@@ -156,6 +161,38 @@ const AllTransactions = () => {
 
     fetchAllTransactions();
   }, [user, currentFamily]);
+
+  const refetchTransactions = async () => {
+    if (!user || !currentFamily) return;
+
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+          *,
+          transaction_categories (
+            name,
+            color,
+            icon,
+            type
+          ),
+          financial_accounts (
+            name,
+            type
+          )
+        `)
+        .eq('family_id', currentFamily.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTransactions(data || []);
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredTransactions = transactions.filter(transaction => {
     // Apply advanced filters first
@@ -380,7 +417,7 @@ const AllTransactions = () => {
                   return (
                     <div 
                       key={transaction.id} 
-                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                      className="flex items-center justify-between p-4 rounded-lg border hover:bg-muted/50 transition-colors group"
                     >
                       <div className="flex items-center space-x-4">
                         <div className={cn(
@@ -420,17 +457,27 @@ const AllTransactions = () => {
                           )}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className={cn(
-                          "font-semibold text-lg",
-                          isIncome ? "text-success" : "text-destructive"
-                        )}>
-                          {showBalances ? (
-                            `${isIncome ? '+' : '-'}${formatCurrency(Math.abs(transaction.amount))}`
-                          ) : (
-                            '••••••'
-                          )}
-                        </p>
+                      <div className="flex items-center space-x-3">
+                        <div className="text-right">
+                          <p className={cn(
+                            "font-semibold text-lg",
+                            isIncome ? "text-success" : "text-destructive"
+                          )}>
+                            {showBalances ? (
+                              `${isIncome ? '+' : '-'}${formatCurrency(Math.abs(transaction.amount))}`
+                            ) : (
+                              '••••••'
+                            )}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setEditTransaction(transaction)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   );
@@ -439,6 +486,23 @@ const AllTransactions = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Transaction Dialog */}
+        <EditTransactionDialog
+          open={!!editTransaction}
+          onOpenChange={(open) => {
+            if (!open) setEditTransaction(null);
+          }}
+          transaction={editTransaction}
+          onTransactionUpdated={() => {
+            setEditTransaction(null);
+            refetchTransactions();
+          }}
+          onTransactionDeleted={() => {
+            setEditTransaction(null);
+            refetchTransactions();
+          }}
+        />
       </div>
     </DashboardLayout>
   );

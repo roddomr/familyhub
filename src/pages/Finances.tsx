@@ -7,6 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import CreateFamilyDialog from '@/components/family/CreateFamilyDialog';
 import AddTransactionDialog from '@/components/finance/AddTransactionDialog';
 import AddAccountDialog from '@/components/finance/AddAccountDialog';
+import CreateBudgetDialog from '@/components/finance/CreateBudgetDialog';
+import BudgetList from '@/components/finance/BudgetList';
+import BudgetAlerts from '@/components/finance/BudgetAlerts';
 import { 
   Plus, 
   TrendingUp, 
@@ -19,7 +22,8 @@ import {
   ArrowDownLeft,
   MoreHorizontal,
   Eye,
-  EyeOff
+  EyeOff,
+  Target
 } from 'lucide-react';
 import { useFinances } from '@/hooks/useFinances';
 import { useFamily } from '@/hooks/useFamily';
@@ -34,6 +38,7 @@ const Finances = () => {
   const [showCreateFamily, setShowCreateFamily] = useState(false);
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
+  const [showCreateBudget, setShowCreateBudget] = useState(false);
   const { 
     accounts, 
     recentTransactions, 
@@ -42,7 +47,8 @@ const Finances = () => {
     monthlyIncome, 
     monthlyExpenses,
     loading,
-    error 
+    error,
+    refreshData
   } = useFinances();
   
   const { currentFamily, loading: familyLoading } = useFamily();
@@ -317,59 +323,77 @@ const Finances = () => {
           </Card>
         </div>
 
+        {/* Budget Alerts */}
+        <BudgetAlerts budgets={budgets} />
+        
         {/* Budget Overview */}
-        {budgets.length > 0 && (
-          <Card className="card-elevated">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{t('finance.budgetOverview')}</CardTitle>
-                  <CardDescription>{t('finance.trackSpendingAgainstBudgets')}</CardDescription>
-                </div>
-                <Button variant="outline" size="sm">
+        <Card className="card-elevated">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>{t('finance.budgetOverview')}</CardTitle>
+                <CardDescription>{t('finance.budgetOverviewDescription')}</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {budgets.length > 3 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/finances/budgets')}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    {t('finance.viewAllBudgets')}
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowCreateBudget(true)}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   {t('finance.createBudget')}
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {budgets.slice(0, 3).map((budget) => {
-                  const spent = 0; // TODO: Calculate actual spent amount
-                  const progress = (spent / budget.amount) * 100;
-                  const isOverBudget = progress > 100;
-                  
-                  return (
-                    <div key={budget.id} className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium">{budget.name}</h4>
-                        <Badge variant={isOverBudget ? "destructive" : "secondary"}>
-                          {budget.period}
-                        </Badge>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span>{t('finance.spent')}: {formatCurrency(spent)}</span>
-                          <span>{t('finance.budget')}: {formatCurrency(budget.amount)}</span>
-                        </div>
-                        <Progress 
-                          value={Math.min(progress, 100)} 
-                          className={cn(
-                            "h-2",
-                            isOverBudget && "bg-destructive/20"
-                          )}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {formatCurrency(budget.amount - spent)} {t('finance.remaining')}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {budgets.length === 0 ? (
+              <div className="text-center py-12">
+                <Target className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  {t('finance.noBudgetsYet')}
+                </p>
+                <Button onClick={() => setShowCreateBudget(true)}>
+                  {t('finance.createFirstBudget')}
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
+            ) : (
+              <BudgetList 
+                budgets={budgets.slice(0, 3)}
+                onBudgetChange={refreshData}
+                showCreateButton={false}
+                showHeader={false}
+              />
+            )}
+            
+            {budgets.length > 3 && (
+              <div className="mt-6 pt-4 border-t border-border">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>{t('finance.showingFirst3Budgets', { total: budgets.length })}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => navigate('/finances/budgets')}
+                    className="text-brand-primary hover:text-brand-primary"
+                  >
+                    {t('finance.viewAllBudgets')} 
+                    <ArrowUpRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Quick Actions */}
         <Card className="card-elevated">
@@ -395,7 +419,11 @@ const Finances = () => {
                 <CreditCard className="w-6 h-6 text-brand-secondary" />
                 <span className="text-sm">{t('finance.addAccount')}</span>
               </Button>
-              <Button variant="outline" className="h-auto p-4 flex-col space-y-2">
+              <Button 
+                variant="outline" 
+                className="h-auto p-4 flex-col space-y-2"
+                onClick={() => setShowCreateBudget(true)}
+              >
                 <PiggyBank className="w-6 h-6 text-brand-accent" />
                 <span className="text-sm">{t('finance.createBudget')}</span>
               </Button>
@@ -413,7 +441,7 @@ const Finances = () => {
           onOpenChange={setShowAddTransaction}
           onTransactionAdded={() => {
             // Refresh financial data when transaction is added
-            window.location.reload(); // Simple refresh for now
+            refreshData();
           }}
         />
 
@@ -423,7 +451,17 @@ const Finances = () => {
           onOpenChange={setShowAddAccount}
           onAccountAdded={() => {
             // Refresh financial data when account is added
-            window.location.reload(); // Simple refresh for now
+            refreshData();
+          }}
+        />
+
+        {/* Create Budget Dialog */}
+        <CreateBudgetDialog
+          open={showCreateBudget}
+          onOpenChange={setShowCreateBudget}
+          onBudgetCreated={() => {
+            // Refresh financial data when budget is created
+            refreshData();
           }}
         />
       </div>
