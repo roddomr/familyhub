@@ -10,6 +10,7 @@ import AddAccountDialog from '@/components/finance/AddAccountDialog';
 import CreateBudgetDialog from '@/components/finance/CreateBudgetDialog';
 import BudgetList from '@/components/finance/BudgetList';
 import BudgetAlerts from '@/components/finance/BudgetAlerts';
+import RecurringTransactionsManager from '@/components/finance/RecurringTransactionsManager';
 import { 
   Plus, 
   TrendingUp, 
@@ -23,7 +24,8 @@ import {
   MoreHorizontal,
   Eye,
   EyeOff,
-  Target
+  Target,
+  Repeat
 } from 'lucide-react';
 import { useFinances } from '@/hooks/useFinances';
 import { useFamily } from '@/hooks/useFamily';
@@ -39,6 +41,7 @@ const Finances = () => {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showCreateBudget, setShowCreateBudget] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const { 
     accounts, 
     recentTransactions, 
@@ -134,6 +137,13 @@ const Finances = () => {
               {showBalances ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
               {showBalances ? t('finance.hideBalances') : t('finance.showBalances')}
             </Button>
+            <Button 
+              variant={activeTab === 'recurring' ? 'default' : 'outline'}
+              onClick={() => setActiveTab(activeTab === 'recurring' ? 'overview' : 'recurring')}
+            >
+              <Repeat className="w-4 h-4 mr-2" />
+{t('finance.recurringTransactions')}
+            </Button>
             <Button onClick={() => setShowAddTransaction(true)}>
               <Plus className="w-4 h-4 mr-2" />
               {t('finance.addTransaction')}
@@ -141,8 +151,13 @@ const Finances = () => {
           </div>
         </div>
 
-        {/* Financial Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Conditional Content Based on Active Tab */}
+        {activeTab === 'recurring' ? (
+          <RecurringTransactionsManager />
+        ) : (
+          <>
+            {/* Financial Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="card-elevated">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -435,7 +450,11 @@ const Finances = () => {
           </CardContent>
         </Card>
 
-        {/* Add Transaction Dialog */}
+            {/* Overview content ends here */}
+          </>
+        )}
+
+        {/* Dialogs - Always rendered regardless of tab */}
         <AddTransactionDialog
           open={showAddTransaction}
           onOpenChange={setShowAddTransaction}
@@ -445,7 +464,6 @@ const Finances = () => {
           }}
         />
 
-        {/* Add Account Dialog */}
         <AddAccountDialog
           open={showAddAccount}
           onOpenChange={setShowAddAccount}
@@ -455,7 +473,6 @@ const Finances = () => {
           }}
         />
 
-        {/* Create Budget Dialog */}
         <CreateBudgetDialog
           open={showCreateBudget}
           onOpenChange={setShowCreateBudget}
