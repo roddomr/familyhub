@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -24,7 +24,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Plus, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useFamily } from '@/hooks/useFamily';
@@ -35,6 +35,12 @@ import { useTranslation } from 'react-i18next';
 import { LoadingButton } from '@/components/ui/loading-states';
 import { EnhancedInput, EnhancedTextarea, useValidation, validateRequired, validateAmount } from '@/components/ui/form-field';
 import { useEnhancedToast } from '@/hooks/useEnhancedToast';
+import { useAuditLog } from '@/hooks/useAuditLog';
+import { sanitizeAmount, sanitizeText } from '@/lib/security/validation';
+import { SECURITY_THRESHOLDS } from '@/lib/security/encryption';
+import { useCategories } from '@/hooks/useCategories';
+import { CreateCategoryDialog } from './CreateCategoryDialog';
+import { CategoryManager } from './CategoryManager';
 
 interface AddTransactionDialogProps {
   open: boolean;
@@ -49,24 +55,21 @@ interface Account {
   balance: number;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  type: 'income' | 'expense';
-  color: string;
-}
-
 const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTransactionDialogProps) => {
   const { currentFamily } = useFamily();
   const { user } = useAuth();
   const { logInfo, logError } = useLogger();
   const { t } = useTranslation();
   const toast = useEnhancedToast();
+  const { logTransaction, logSuspiciousActivity } = useAuditLog();
   const validation = useValidation();
+  const { getFlatCategories, getCategoriesByType, loadCategories, loading: categoriesLoading } = useCategories();
+  
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [date, setDate] = useState<Date>(new Date());
+  const [createCategoryOpen, setCreateCategoryOpen] = useState(false);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -78,25 +81,24 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
     notes: '',
   });
 
-  // Load accounts and categories when dialog opens
+  // Load accounts when dialog opens
   useEffect(() => {
     if (open && currentFamily) {
-      loadAccountsAndCategories();
+      loadAccounts();
     }
   }, [open, currentFamily]);
 
-  const loadAccountsAndCategories = async () => {
+  const loadAccounts = async () => {
     if (!currentFamily) {
-      await logError('Cannot load accounts/categories: no current family', {}, 'finance', 'load_data', 'NO_FAMILY');
+      await logError('Cannot load accounts: no current family', {}, 'finance', 'load_accounts', 'NO_FAMILY');
       return;
     }
 
-    await logInfo('Loading accounts and categories', {
+    await logInfo('Loading accounts', {
       family_id: currentFamily.id
-    }, 'finance', 'load_data');
+    }, 'finance', 'load_accounts');
 
     try {
-      // Load accounts
       const { data: accountsData, error: accountsError } = await supabase
         .from('financial_accounts')
         .select('id, name, type, balance')
@@ -112,37 +114,29 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
         throw accountsError;
       }
 
-      // Load categories
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('transaction_categories')
-        .select('id, name, type, color')
-        .eq('family_id', currentFamily.id)
-        .order('name');
-
-      if (categoriesError) {
-        await logError('Error loading categories', {
-          error: categoriesError.message,
-          code: categoriesError.code
-        }, 'finance', 'load_categories', 'DATABASE_ERROR');
-        throw categoriesError;
-      }
-
-      await logInfo('Successfully loaded accounts and categories', {
-        accounts_count: accountsData?.length || 0,
-        categories_count: categoriesData?.length || 0
-      }, 'finance', 'load_data');
+      await logInfo('Successfully loaded accounts', {
+        accounts_count: accountsData?.length || 0
+      }, 'finance', 'load_accounts');
 
       setAccounts(accountsData || []);
-      setCategories(categoriesData || []);
     } catch (error: any) {
-      await logError('Unexpected error loading data', {
+      await logError('Unexpected error loading accounts', {
         error: error.message,
         stack: error.stack
-      }, 'finance', 'load_data', 'UNEXPECTED_ERROR', error.stack);
-      console.error('Error loading accounts and categories:', error);
-      toast.apiError(error, 'loading accounts and categories');
+      }, 'finance', 'load_accounts', 'UNEXPECTED_ERROR', error.stack);
+      console.error('Error loading accounts:', error);
+      toast.apiError(error, 'loading accounts');
     }
   };
+
+  // Get filtered categories based on transaction type
+  const availableCategories = getCategoriesByType(formData.type);
+
+  // Handle category creation completion
+  const handleCategoryCreated = useCallback(() => {
+    console.log('[DEBUG] Category created, reloading categories...');
+    loadCategories(); // Refresh categories list
+  }, [loadCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,7 +146,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
       form_data: formData,
       date: format(date, 'yyyy-MM-dd'),
       accounts_available: accounts.length,
-      categories_available: categories.length
+      categories_available: availableCategories.length
     }, 'finance', 'create_transaction');
 
     if (!currentFamily || !user || !formData.description || !formData.amount || !formData.accountId) {
@@ -176,7 +170,10 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
     setLoading(true);
     try {
-      const amount = parseFloat(formData.amount);
+      // Sanitize inputs for security
+      const sanitizedDescription = sanitizeText(formData.description);
+      const sanitizedAmount = sanitizeAmount(formData.amount);
+      const amount = sanitizedAmount;
       if (isNaN(amount) || amount <= 0) {
         await logError('Transaction creation failed: invalid amount', {
           amount_input: formData.amount,
@@ -209,7 +206,7 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
           family_id: currentFamily.id,
           account_id: formData.accountId,
           category_id: formData.categoryId || null,
-          description: formData.description,
+          description: sanitizedDescription,
           amount: amount,
           type: formData.type,
           date: format(date, 'yyyy-MM-dd'),
@@ -225,6 +222,37 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
           details: transactionError.details
         }, 'finance', 'create_transaction', 'DATABASE_ERROR');
         throw transactionError;
+      }
+
+      // Security audit logging
+      const createdTransaction = transactionData?.[0];
+      if (createdTransaction) {
+        await logTransaction('CREATE', {
+          id: createdTransaction.id,
+          description: sanitizedDescription,
+          amount: amount,
+          type: formData.type,
+          account_id: formData.accountId,
+          family_id: currentFamily.id,
+          created_by: user.id
+        });
+
+        // Check for suspicious amounts
+        if (amount > SECURITY_THRESHOLDS.LARGE_TRANSACTION) {
+          await logSuspiciousActivity('large_transaction_created', {
+            transaction_id: createdTransaction.id,
+            amount: amount,
+            threshold: SECURITY_THRESHOLDS.LARGE_TRANSACTION,
+            account_id: formData.accountId
+          });
+          
+          if (amount > SECURITY_THRESHOLDS.CRITICAL_TRANSACTION) {
+            toast.warning({
+              title: 'Large Transaction Alert',
+              description: `Transaction of $${amount} exceeds normal threshold. This has been logged for security.`
+            });
+          }
+        }
       }
 
       await logInfo('Transaction created, updating account balance', {
@@ -290,7 +318,35 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
     }
   };
 
-  const filteredCategories = categories.filter(cat => cat.type === formData.type);
+  // Helper function to render category hierarchy in dropdown
+  const renderCategoryOption = (category: any, level = 0) => {
+    const indentStyle = level > 0 ? { paddingLeft: `${level * 1.5}rem` } : {};
+    return (
+      <SelectItem key={category.id} value={category.id}>
+        <div className="flex items-center gap-2" style={indentStyle}>
+          <div 
+            className="w-3 h-3 rounded-full flex-shrink-0" 
+            style={{ backgroundColor: category.color }}
+          />
+          <span>{category.name}</span>
+          {level > 0 && <span className="text-xs text-muted-foreground">↳</span>}
+        </div>
+      </SelectItem>
+    );
+  };
+
+  const renderCategoryItems = (categories: any[]) => {
+    const items: JSX.Element[] = [];
+    categories.forEach(category => {
+      items.push(renderCategoryOption(category, 0));
+      if (category.subcategories && category.subcategories.length > 0) {
+        category.subcategories.forEach((sub: any) => {
+          items.push(renderCategoryOption(sub, 1));
+        });
+      }
+    });
+    return items;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -399,26 +455,53 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
 
             {/* Category */}
             <div className="grid gap-2">
-              <Label htmlFor="category">{t('finance.category')}</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="category">{t('finance.category')}</Label>
+                <div className="flex gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCreateCategoryOpen(true)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    {t('finance.categories.create')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCategoryManagerOpen(true)}
+                    className="h-6 px-2 text-xs"
+                  >
+                    <Settings className="h-3 w-3 mr-1" />
+                    {t('finance.categories.manage')}
+                  </Button>
+                </div>
+              </div>
               <Select
                 value={formData.categoryId}
                 onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                disabled={categoriesLoading}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t('finance.selectCategory')} />
+                  <SelectValue placeholder={
+                    categoriesLoading 
+                      ? t('common.loading') 
+                      : availableCategories.length === 0 
+                        ? t('finance.categories.noCategories')
+                        : t('finance.selectCategory')
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredCategories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      <div className="flex items-center space-x-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                        <span>{category.name}</span>
-                      </div>
+                  {availableCategories.length > 0 ? (
+                    renderCategoryItems(availableCategories)
+                  ) : (
+                    <SelectItem value="no-categories" disabled>
+                      {t('finance.categories.createFirst')}
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -454,6 +537,20 @@ const AddTransactionDialog = ({ open, onOpenChange, onTransactionAdded }: AddTra
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Create Category Dialog */}
+      <CreateCategoryDialog
+        open={createCategoryOpen}
+        onOpenChange={setCreateCategoryOpen}
+        defaultType={formData.type}
+        onCategoryCreated={handleCategoryCreated}
+      />
+
+      {/* Category Manager Dialog */}
+      <CategoryManager
+        open={categoryManagerOpen}
+        onOpenChange={setCategoryManagerOpen}
+      />
     </Dialog>
   );
 };

@@ -24,6 +24,10 @@ export const useLogger = () => {
   const { user } = useAuth();
 
   const log = async (entry: Omit<LogEntry, 'user_id'>) => {
+    // Always log to console first
+    console.log(`[${entry.level.toUpperCase()}] ${entry.message}`, entry.details || '');
+    
+    // Try database logging with improved error handling
     try {
       const logData = {
         user_id: user?.id || null,
@@ -35,17 +39,19 @@ export const useLogger = () => {
         action: entry.action || null,
         error_code: entry.error_code || null,
         stack_trace: entry.stack_trace || null,
-        user_agent: navigator.userAgent,
+        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
         session_id: user?.id || null,
       };
 
       const { error } = await supabase.from('logs').insert(logData);
       
       if (error) {
-        console.error('Failed to log to database:', error);
+        // Only log database errors to console, don't throw
+        console.warn('Database logging failed (non-critical):', error.message);
       }
-    } catch (error) {
-      console.error('Logger error:', error);
+    } catch (error: any) {
+      // Catch network/connection errors gracefully
+      console.warn('Logger database connection failed (non-critical):', error.message);
     }
   };
 

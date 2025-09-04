@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import LogsViewer from '@/components/debug/LogsViewer';
 import { LanguageSelector } from '@/components/ui/language-selector';
 import { ErrorHandlingDemo } from '@/components/demo/ErrorHandlingDemo';
+import SecurityDashboard from '@/components/security/SecurityDashboard';
+import EncryptionMigrationPanel from '@/components/admin/EncryptionMigrationPanel';
 import { useTranslation } from 'react-i18next';
 import { 
   User, 
@@ -51,9 +53,10 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="profile">{t('settings.profile')}</TabsTrigger>
             <TabsTrigger value="security">{t('settings.security')}</TabsTrigger>
+            <TabsTrigger value="encryption">🔐 Encryption</TabsTrigger>
             <TabsTrigger value="notifications">{t('settings.notifications')}</TabsTrigger>
             <TabsTrigger value="appearance">{t('settings.appearance')}</TabsTrigger>
             <TabsTrigger value="debug">{t('settings.debug')}</TabsTrigger>
@@ -106,9 +109,14 @@ const Settings = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">{t('settings.securityComingSoon')}</p>
+                <SecurityDashboard />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Encryption Tab */}
+          <TabsContent value="encryption">
+            <EncryptionMigrationPanel />
           </TabsContent>
 
           {/* Notifications Tab */}
